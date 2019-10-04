@@ -1,0 +1,587 @@
+
+#######################################################################
+### Function quantile_network
+
+### input: standardized data matrix: single quantile; initial selection probability: default value =0.5.
+
+
+### Output:returns the connection probability for each edge i-j, coefficient matrix for selected edge, sign matrix, ###postterior coefficient matrix
+
+quantile_network<-function(X3,theta,gridvec)
+{
+  p<-ncol(X3)
+  n<-nrow(X3)
+    
+  qtln<-1
+  
+  
+  
+  p2<-ncol(X3)
+  graphcon<-matrix(0,p2,p2)
+  avgcfmat<-graphcon
+  sgnmat<-graphcon
+  CFqtl<-matrix(0,p2,(p2*qtln))
+  
+  inp2<-c(1:p2)
+  tvec<-c(1:p2)-c(1:p2)+1
+  
+  for(varn in 1:ncol(X3))
+  {
+    print(varn)
+    y<-X3[,varn]
+    
+    if(varn==1)
+    {
+      X<-X3[,2:ncol(X3)]
+      
+      
+    }
+    
+    if(varn==ncol(X3))
+    {
+      X<-X3[,1:(ncol(X3)-1)]
+      
+      
+    }
+    
+    
+    
+    if(varn>1 &&varn<ncol(X3))
+    {
+      X<-cbind(X3[,1:(varn-1)],X3[,(varn+1):ncol(X3)])
+      
+      
+    }
+    ones<-c(1:n)-c(1:n)+1
+    X<-cbind(ones,X)
+    p<-ncol(X)
+    
+    a<-c(1:p)-c(1:p)+1
+    b<-c(1:p)-c(1:p)+1
+    a1<-10
+    b1<-10
+    alph<-1
+    beta<-1
+    v1<-10
+    v0<-.01
+    p<-ncol(X)
+    
+    
+    idp<-diag((c(1:p)-c(1:p)+1))
+    
+    xtx<-t(X)%*%X
+    qtl_inp<-matrix(0,p,qtln)
+    qtl_bta<-matrix(0,p,qtln)
+    qtl_std<-matrix(0,p,qtln)
+    
+    qtln<-length(theta)
+
+    inib<-chol2inv(chol(xtx+.0001*idp))%*%(t(X)%*%y)
+
+    bmean<-inib
+    lam2<-sqrt(1/mean(abs(bmean)))
+    res1<-sum((y-X%*%bmean)^2)
+    
+    E_sig<-(n-p)/res1
+    E_sig<-1
+    
+    
+   bstd<-chol2inv(chol(xtx+.0001*idp))
+
+     lam2<-1/(mean(abs(bmean))*sqrt(E_sig))
+    
+     itN<-100
+    
+     inp<-rbeta(p,1,1)
+    
+    
+    pmat<-matrix(0,p,itN)
+    indmat<-matrix(0,(p),itN)
+    bmat<-matrix(0,(p),itN)
+    lamvec<-c(1:itN)
+    
+    xi1o<-(1-2*theta)/(theta*(1-theta))
+    xi2o<-sqrt(2/(theta*(1-theta)))
+    
+    
+    E_t<-n/res1
+    E_t<-1
+    inivar<-1/(diag(t(X)%*%X))
+    
+    
+    E_tau<-bmean^2+diag(bstd)
+    E_tau<-1
+    rs2o<-diag((X)%*%bstd%*%t(X))
+    
+    qtln<-1
+    
+    
+    
+    groupn<-ncol(X)
+    groupmat<-matrix(0,groupn,(groupn))
+    
+    for(i in 1:groupn)
+    {
+      for(j in 1:qtln)
+      {
+        groupmat[i,((j-1)*groupn+i)]<-1
+        
+      }
+      
+    }
+    
+    
+    y1<-y
+    X1<-matrix(0,n,p)
+    
+    X1<-X
+    
+    #for(i in 1:(qtln))
+    #{
+     # X1[(n*(i-1)+1):(n*i),(p*(i-1)+1):(p*i)]<-X
+    #}
+    
+    Var_b<-rep(diag(bstd),qtln)
+    bmean<-rep(bmean,qtln)
+    
+    xi1<-rep(xi1o,each=n)
+    
+    xi2<-rep(xi2o,each=n)
+    inp3<-rep(inp,qtln)
+    idp<-diag(c(1:(p))-c(1:(p))+1)
+    indmat<-matrix(0,(p),itN)
+    bmat<-matrix(0,(p),itN)
+    pmat<-bmat
+    
+    
+    ItN<-40
+    
+    itN<-40
+    
+    iniE_b2<-bmean^2+rep(diag(bstd),qtln)
+    iniE_b2<-pmax(bmean^2,1)
+    iniE_b2<-iniE_b2-iniE_b2+1
+    
+    #iniE_b2<-100000*iniE_b2
+    E_b2<-bmean^2+rep(diag(bstd),qtln)
+    pend<-1/iniE_b2
+    
+    scale_bic<-10^5
+    min_bic<-scale_bic
+    
+    temp_bic<-rep(scale_bic,length(gridvec))
+    
+    inp<-rep(rbeta(p,10,10),qtln)
+    for(grid_ind in c(1:length(gridvec)))
+    {
+    	inip0<-gridvec[grid_ind]
+    	
+    inp<-inp-inp+inip0
+    inp[1]<-1
+    for(it in 1:itN)
+    {
+      bprob<-bmean*inp
+      dmn1<-X1%*%(bmean*inp)
+      dmn<-X1%*%(bmean*inp)
+      
+      
+      rs1<-(y1-dmn1)^2
+      
+      
+      
+      inpmt<-inp%*%t(inp)
+      
+      if(it>1)
+      {
+        bprobstd<-bstd
+        bprobstd<-bstd*inpmt
+        diag(bprobstd)<-E_b2*inp-(bmean*inp)^2
+        
+        rs2<-diag((X1)%*%bprobstd%*%t(X1))
+      }
+      if(it==1)
+      {
+        rs2<-rep(rs2o,qtln)
+        
+      }
+      
+      
+      
+      
+      lam1<-E_t*(rs1+rs2)*(1/xi2^2)
+      mu1<-sqrt(lam1*1/((E_t*(2+(xi1/xi2)^2))))
+      
+           
+      z<-y1-xi1*mu1
+      
+  
+      
+      E_t<-1
+      
+         #  E_t<-2.25
+
+      
+      invmat<-diag(E_t*c(1/mu1)*(1/xi2^2))
+      
+      
+      pend<-1/iniE_b2
+      
+      gam_X1<-inp*t(X1)
+      
+      xtmat0<-gam_X1%*%invmat
+      xtmat2<-xtmat0%*%(t(gam_X1))
+      #xtmat3<-xtmat2-xtmat2
+      diag(xtmat2)<-diag(xtmat0%*%X1)
+      
+      
+      xtmat<-xtmat2+diag(c(pend) )
+       xtmat<-xtmat2+E_t*diag(c(pend) )
+      
+      xtmatinv2<-xtmat-xtmat
+      bmn<-bmean
+      
+               
+        l0<-1
+        l1<-n
+        
+        m0<-1
+        m1<-p2
+        
+        xtmatinv3<-chol2inv(chol(xtmat[m0:m1,m0:m1]))
+        dginv<-diag(invmat[l0:l1,l0:l1])
+        tmp2<-((inp[1:p2])*t(X))%*%(invmat[l0:l1,l0:l1])%*%(z[l0:l1])
+        
+        
+        bmn[m0:m1]<-xtmatinv3%*%tmp2
+        xtmatinv2[m0:m1,m0:m1]<-xtmatinv3
+      
+      
+      
+      
+      
+      
+      bmean<-bmn
+      xtmatinv<-xtmatinv2
+      bstd<-xtmatinv
+      Var_b<-diag(bstd)
+      bmat[,it]<-bmean
+      
+      E_b2<-bmean^2+Var_b
+      
+      
+      index<-rep((c(1:p)-c(1:p)),1)
+      incl<-which(inp>=.5)
+      index[incl]<-1
+      #tinc<-sum(index)
+      tinc<-sum(inp)
+      alph1<-alph+tinc
+      beta1<-beta+qtln*p-tinc
+      
+      
+      
+      alph1<-alph+((tinc-2)/qtln)
+      beta1<-beta+p-1-(tinc-2)/qtln
+      
+      
+      
+      alph1<-alph+((tinc-qtln)/qtln)
+      beta1<-beta+p-1-(tinc-qtln)/qtln
+      
+      
+      valmat<-matrix(0,(p),200)
+      
+      
+      valvec<-c(1:p)
+      
+      
+      valvec[1]<-1
+      
+      
+      for(i in 2:groupn)
+      {
+        place<-which(groupmat[i,]==1)
+        grstd<-bstd[place,place]
+        
+        piv<-rbeta(1000,alph1,beta1)
+        logp<-mean(log(piv/(1-piv)))
+        #logp<--.9
+        
+        cb<-bmean[place]
+        cb1<-rep(cb,each=n)
+        cb2<-rep(c((bmean[place])^2+(grstd)),each=n)
+        
+        tempinp1<-inp
+        tempinp2<-inp
+        tempinp1[place]<-0
+        
+        X11<-rep(X[,place[1]],qtln)
+        
+        shift1<-2*y1*X11*cb1
+        shift2<-cb2*(X11^2)
+        shift3<-2*cb1*X11*(X1%*%(bmean*tempinp1))
+        shift4<-2*X11*cb*mu1*xi1
+        
+        shift<-shift1-shift2-shift3-shift4
+        val<-logp+ sum(.5*shift*(E_t*c(1/mu1)*(1/xi2^2)))
+        
+         frac<-it/(it+1)
+         frac<-1
+
+         val<-logp+ frac*sum(.5*shift*(E_t*c(1/mu1)*(1/xi2^2)))
+        
+        valvec[i]<-1/(1+exp(-val))
+        
+        
+        #frac<-it/(it+1)
+        
+        #valvec[i]<-(1/(1+exp(-val)))^frac
+        
+        #inp[place]<-rep(valvec[i],qtln)
+      }
+      
+      
+      inp<-valvec
+      
+     # inp<-pmax(valvec,.0001)
+      
+            
+      
+      pmat[,it]<-inp
+      
+    }
+    
+    
+    
+    
+    
+    inp1<-matrix(inp,p,qtln)[,1]
+    avgcf<-bmean
+    avgsign<-sign(bmean)
+    
+    temp_avgcf<-avgcf
+    temp_avgsign<-avgsign
+    temp_Et<-E_t
+    temp_inp1<-inp1
+    
+    fit<-X%*%(bmean*temp_inp1)
+      res<-y-fit
+      
+      res2<-res
+      ind<-which(res>0)
+      res2<--(1-theta[1])*res
+      res2[ind]<-theta[1]*res[ind]
+      temp_bic[grid_ind]<-E_t*2*(sum(res2))+length(which(inp1>0.5))*log(n)
+    #  temp_bic[grid_ind]<--2*n*log(temp_Et)+2*sum(res2)*temp_Et+length(which(inp1>0.5))*log(n)
+      min_bic<-min(temp_bic[grid_ind],min_bic)
+      
+      if(min_bic==temp_bic[grid_ind])
+      {
+      	inp1<-temp_inp1
+      	avgcf<-temp_avgcf
+      	avgsign<-temp_avgsign
+      	E_t<-temp_Et
+      #	print(c(inip0,min_bic))
+      	
+      }
+    
+    }
+    inp2[varn]<-1
+    index<-which((abs(c(1:(p))-varn)>0))
+    
+    #print(avgcf)
+    #print(avgsign)
+    #print(index)
+    
+    inp2[index]<-inp1[2:length(inp1)]
+    graphcon[varn,]<-inp2
+    avgcfmat[varn,index]<-avgcf[2:length(inp1)]
+    sgnmat[varn,index]<-avgsign[2:length(inp1)]
+    CFqtl[varn,]<-bmean
+    tvec[varn]<-E_t
+    #print(E_t)
+    
+  }
+  
+  
+  
+  
+  graphcon2<-graphcon-graphcon
+  ind<-which(graphcon>.5)
+  graphcon2[ind]<-1
+  
+  
+  
+  graphcon2<-graphcon2+t(graphcon2)
+  ind<-which(graphcon2>0)
+  graphcon2<-graphcon-graphcon
+  graphcon2[ind]<-1
+  returnmat<-cbind(graphcon,avgcfmat,sgnmat,CFqtl)
+  return(returnmat)
+}
+
+###############
+
+## returns the connection probability for each edge i-j, coefficient matrix for selected edge, sign matrix:positive negative coefficients, ###coefficient matrix
+#################
+
+
+################################################################################################################
+###  Function   quantile_networkvec_bic,  uses  quantile_network, resval
+
+### Input: standardized data matrix (X3):  quantile vector (thetavec); initial selection probability(gridvec)  default value =0.5.
+### prints bic value; minimum bic value can be used to select the initial selection probability   which has default value =0.5,
+## in case of local optima
+
+##Output:  combines  different quatiles for getting the adjacency matrix## matrix of edge probability, stacked by ###column
+
+##prints average residual and BIC score
+
+
+quantile_networkvec_bic<-function(X3,thetavec,gridvec)
+{
+  qtlnm<-length(thetavec)
+  p2<-ncol(X3)
+  n<-nrow(X3)
+  graphconmat<-matrix(0,p2,(qtlnm*p2))
+  graphcomb<-matrix(0,p2,p2)
+  graphmat<-graphcomb
+  fiter<-0
+  bic<-0
+  for(j in 1:qtlnm)
+  {
+    print(thetavec[j])
+    qntout<-quantile_network(X3,thetavec[j],gridvec)
+    graphcon<-qntout[,1:p2]
+    CFqtl<-qntout[,(3*p2+1):ncol(qntout)]
+    
+   # print(   BICval(X31,theta,CFqtl)    )
+    
+    
+    
+    graphcon2<-graphcon-graphcon
+    ind<-which(graphcon>.5)
+    graphcon2[ind]<-1
+    
+    graphcon2<-graphcon2+t(graphcon2)
+    ind<-which(graphcon2>0)
+    graphcon2<-graphcon-graphcon
+    graphcon2[ind]<-1
+    
+    
+    l<-(j-1)*p2+1
+    m<-j*p2
+    graphconmat[,l:m]<-graphcon
+    graphcomb<-graphcomb+graphcon2
+    
+    CFqtl<-qntout[,(3*p2+1):ncol(qntout)]
+    
+    tvec<-qntout[,ncol(qntout)]
+    fiter<-fiter+(resval(X3,thetavec[j],CFqtl,graphcon2))
+bic<-2*fiter+sum(graphcon2)*log(n)
+    
+  }
+  
+  ind<-which(graphcomb>0)
+  graphmat[ind]<-1
+  
+  print(fiter/(n*p2))
+print(bic)
+
+  print(1)
+  outmat<-cbind(graphmat,graphconmat)
+  print(2)
+  return(outmat)
+  
+  
+}
+
+##################################################################################################################
+## Function resval
+
+## input: data matrix, quantile, coefficient matrix, fitted graph
+##output average residual
+
+
+
+resval<-function(X3,theta,CFqtl,graphcon2)
+{
+  
+  qtln<-length(theta)
+  p2<-ncol(X3)
+  ermat<-matrix(0,p2,qtln)
+    n<-nrow(X3)
+
+  
+  for(varn in 1:p2)
+  {
+    
+    
+    for(i in 1:qtln)
+    {
+      qtl<-theta[i]
+      l<-(i-1)*p2+1
+      m<-i*p2
+     # CFtmp<-CFqtl[,l:m]
+      
+     # beta<-CFtmp[varn,]
+      
+      y<-X3[,varn]
+      
+      if(varn==1)
+      {
+        X<-X3[,2:ncol(X3)]
+        
+        
+      }
+      
+      if(varn==ncol(X3))
+      {
+        X<-X3[,1:(ncol(X3)-1)]
+        
+        
+      }
+      
+      
+      
+      if(varn>1 &&varn<ncol(X3))
+      {
+        X<-cbind(X3[,1:(varn-1)],X3[,(varn+1):ncol(X3)])
+        
+        
+      }
+      index1<-which(graphcon2[varn,]==1)
+      index2<-index1[which(abs(index1-varn)>0)]
+            ones<-c(1:n)-c(1:n)+1
+
+      if(length(index2)>0)
+      {
+      ftt<-rq(y~X3[,index2],qtl)
+      X<-cbind(ones,X3[,index2])
+      fit<-X%*%(ftt$coefficients)
+      }
+            if(length(index2)==0)
+            {X<-ones
+            fit<-quantile(y,theta[i])	}
+
+            res<-y-fit
+
+     # fit<-X%*%beta
+      
+      ermat[varn,i]<-sum(abs(res)^2)
+      res2<-res
+      ind<-which(res>0)
+      res2<--(1-qtl)*res
+      res2[ind]<-qtl*res[ind]
+      ermat[varn,i]<-sum(res2)
+    }
+    
+    
+  }
+  
+  
+  return(sum(ermat))
+}
+
+
+
+
