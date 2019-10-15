@@ -1,13 +1,96 @@
 
+
+
+###############
+
+## returns the connection probability for each edge i-j, coefficient matrix for selected edge, sign matrix:positive negative coefficients, ###coefficient matrix
+#################
+
+
+################################################################################################################
+###  Function   quantile_networkvec_bic,  uses  function quantile_network, resval
+
+### Input: standardized data matrix (X3):  quantile vector (thetavec); initial selection probability(gridvec)  default value =0.5.; prior variance (prior_var); number of iteration in variational Bayes(vbs_it)
+### prints bic value; minimum bic value can be used to select the initial selection probability   which has default value =0.5, in case of local optima
+
+##Output:  combines  different quantiles for getting the adjacency matrix## matrix of edge probability, stacked by column
+
+##Prints average residual and bic score
+
+
+quantile_networkvec_bic<-function(X3,thetavec,gridvec,prior_var,vbs_it)
+{
+  qtlnm<-length(thetavec)
+  p2<-ncol(X3)
+  n<-nrow(X3)
+  graphconmat<-matrix(0,p2,(qtlnm*p2))
+  graphcomb<-matrix(0,p2,p2)
+  graphmat<-graphcomb
+  fiter<-0
+  bic<-0
+  for(j in 1:qtlnm)
+  {
+    print(thetavec[j])
+    qntout<-quantile_network(X3,thetavec[j],gridvec,prior_var,vbs_it)
+    graphcon<-qntout[,1:p2]
+    CFqtl<-qntout[,(3*p2+1):ncol(qntout)]
+    
+   # print(   BICval(X31,theta,CFqtl)    )
+    
+    
+    
+    graphcon2<-graphcon-graphcon
+    ind<-which(graphcon>.5)
+    graphcon2[ind]<-1
+    
+    graphcon2<-graphcon2+t(graphcon2)
+    ind<-which(graphcon2>0)
+    graphcon2<-graphcon-graphcon
+    graphcon2[ind]<-1
+    
+    
+    l<-(j-1)*p2+1
+    m<-j*p2
+    graphconmat[,l:m]<-graphcon
+    graphcomb<-graphcomb+graphcon2
+    
+    CFqtl<-qntout[,(3*p2+1):ncol(qntout)]
+    
+    tvec<-qntout[,ncol(qntout)]
+    fiter<-fiter+(resval(X3,thetavec[j],CFqtl,graphcon2))
+
+### bic computation
+bic<-2*fiter+sum(graphcon2)*log(n)
+    
+  }
+  
+  ind<-which(graphcomb>0)
+  graphmat[ind]<-1
+  
+  print(fiter/(n*p2))
+print(bic)
+
+  #print(1)
+  outmat<-cbind(graphmat,graphconmat)
+  #print(2)
+  return(outmat)
+  
+  
+}
+
+
+
 #######################################################################
 ### Function quantile_network
 
-### input: standardized data matrix: single quantile; initial selection probability: default value =0.5.
+### input: standardized data matrix: single quantile; initial selection probability: default value =0.5; prior variance; number of iteration in variational Bayes
+## this code uses same prior variance over coefficient in conditional quantile regression, but the following function can be changed to accommodate different variance
 
+### We by default use 40 iterations for variational Bayes algorithm, in which the examples converge
 
-### Output:returns the connection probability for each edge i-j, coefficient matrix for selected edge, sign matrix, ###postterior coefficient matrix
+### Output:returns the connection probability for each edge i-j, coefficient matrix for selected edge, sign matrix, posterior coefficient matrix
 
-quantile_network<-function(X3,theta,gridvec)
+quantile_network<-function(X3,theta,gridvec,prior_var,vbs_it)
 {
   p<-ncol(X3)
   n<-nrow(X3)
@@ -90,7 +173,7 @@ quantile_network<-function(X3,theta,gridvec)
 
      lam2<-1/(mean(abs(bmean))*sqrt(E_sig))
     
-     itN<-100
+     itN<-vbs_it
     
      inp<-rbeta(p,1,1)
     
@@ -157,10 +240,11 @@ quantile_network<-function(X3,theta,gridvec)
     ItN<-40
     
     itN<-40
+itN<-vbs_it
     
     iniE_b2<-bmean^2+rep(diag(bstd),qtln)
     iniE_b2<-pmax(bmean^2,1)
-    iniE_b2<-iniE_b2-iniE_b2+1
+    iniE_b2<-iniE_b2-iniE_b2+prior_var
     
     #iniE_b2<-100000*iniE_b2
     E_b2<-bmean^2+rep(diag(bstd),qtln)
@@ -218,7 +302,7 @@ quantile_network<-function(X3,theta,gridvec)
       
       E_t<-1
       
-         #  E_t<-2.25
+     
 
       
       invmat<-diag(E_t*c(1/mu1)*(1/xi2^2))
@@ -324,7 +408,7 @@ quantile_network<-function(X3,theta,gridvec)
         shift<-shift1-shift2-shift3-shift4
         val<-logp+ sum(.5*shift*(E_t*c(1/mu1)*(1/xi2^2)))
         
-         frac<-it/(it+1)
+         #frac<-it/(it+1)
          frac<-1
 
          val<-logp+ frac*sum(.5*shift*(E_t*c(1/mu1)*(1/xi2^2)))
@@ -332,11 +416,7 @@ quantile_network<-function(X3,theta,gridvec)
         valvec[i]<-1/(1+exp(-val))
         
         
-        #frac<-it/(it+1)
-        
-        #valvec[i]<-(1/(1+exp(-val)))^frac
-        
-        #inp[place]<-rep(valvec[i],qtln)
+       
       }
       
       
@@ -371,7 +451,7 @@ quantile_network<-function(X3,theta,gridvec)
       res2<--(1-theta[1])*res
       res2[ind]<-theta[1]*res[ind]
       temp_bic[grid_ind]<-E_t*2*(sum(res2))+length(which(inp1>0.5))*log(n)
-    #  temp_bic[grid_ind]<--2*n*log(temp_Et)+2*sum(res2)*temp_Et+length(which(inp1>0.5))*log(n)
+ 
       min_bic<-min(temp_bic[grid_ind],min_bic)
       
       if(min_bic==temp_bic[grid_ind])
@@ -417,82 +497,6 @@ quantile_network<-function(X3,theta,gridvec)
   graphcon2[ind]<-1
   returnmat<-cbind(graphcon,avgcfmat,sgnmat,CFqtl)
   return(returnmat)
-}
-
-###############
-
-## returns the connection probability for each edge i-j, coefficient matrix for selected edge, sign matrix:positive negative coefficients, ###coefficient matrix
-#################
-
-
-################################################################################################################
-###  Function   quantile_networkvec_bic,  uses  quantile_network, resval
-
-### Input: standardized data matrix (X3):  quantile vector (thetavec); initial selection probability(gridvec)  default value =0.5.
-### prints bic value; minimum bic value can be used to select the initial selection probability   which has default value =0.5,
-## in case of local optima
-
-##Output:  combines  different quatiles for getting the adjacency matrix## matrix of edge probability, stacked by ###column
-
-##prints average residual and BIC score
-
-
-quantile_networkvec_bic<-function(X3,thetavec,gridvec)
-{
-  qtlnm<-length(thetavec)
-  p2<-ncol(X3)
-  n<-nrow(X3)
-  graphconmat<-matrix(0,p2,(qtlnm*p2))
-  graphcomb<-matrix(0,p2,p2)
-  graphmat<-graphcomb
-  fiter<-0
-  bic<-0
-  for(j in 1:qtlnm)
-  {
-    print(thetavec[j])
-    qntout<-quantile_network(X3,thetavec[j],gridvec)
-    graphcon<-qntout[,1:p2]
-    CFqtl<-qntout[,(3*p2+1):ncol(qntout)]
-    
-   # print(   BICval(X31,theta,CFqtl)    )
-    
-    
-    
-    graphcon2<-graphcon-graphcon
-    ind<-which(graphcon>.5)
-    graphcon2[ind]<-1
-    
-    graphcon2<-graphcon2+t(graphcon2)
-    ind<-which(graphcon2>0)
-    graphcon2<-graphcon-graphcon
-    graphcon2[ind]<-1
-    
-    
-    l<-(j-1)*p2+1
-    m<-j*p2
-    graphconmat[,l:m]<-graphcon
-    graphcomb<-graphcomb+graphcon2
-    
-    CFqtl<-qntout[,(3*p2+1):ncol(qntout)]
-    
-    tvec<-qntout[,ncol(qntout)]
-    fiter<-fiter+(resval(X3,thetavec[j],CFqtl,graphcon2))
-bic<-2*fiter+sum(graphcon2)*log(n)
-    
-  }
-  
-  ind<-which(graphcomb>0)
-  graphmat[ind]<-1
-  
-  print(fiter/(n*p2))
-print(bic)
-
-  print(1)
-  outmat<-cbind(graphmat,graphconmat)
-  print(2)
-  return(outmat)
-  
-  
 }
 
 ##################################################################################################################

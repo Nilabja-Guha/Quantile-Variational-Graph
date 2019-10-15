@@ -107,10 +107,12 @@ library(quantreg)
  
  #####################################################################
   thetavec<-c(.5)## quantile grid
+
+pr_var<-1
   
 gridvec<-.5
 
- outmat<-quantile_networkvec_bic(X31,thetavec,gridvec)
+ outmat<-quantile_networkvec_bic(X31,thetavec,gridvec,pr_var,vbs_it)
 
 ################################################################
 
@@ -158,7 +160,7 @@ X3<-L$data
 ############################################
  thetavec<-c(.3,.5,.7)## quantile grid
  
-outmat<-quantile_networkvec_bic(X31,thetavec,gridvec)
+ outmat<-quantile_networkvec_bic(X31,thetavec,gridvec,pr_var,vbs_it)
 
 ################ QVB graph 
   p2<-ncol(X31)
@@ -189,7 +191,7 @@ plot(gr13,main="GGM")
 
 
 ##################################################################
-#######Gaussuan Banded inverse covariance matrix
+#######Gaussian Banded inverse covariance matrix
 ###################################################################
 
 
@@ -214,7 +216,7 @@ X3<-L$data
   thetavec<-c(.5)  ## quantile grid
 
  
-outmat<-quantile_networkvec_bic(X31,thetavec,gridvec)
+ outmat<-quantile_networkvec_bic(X31,thetavec,gridvec,pr_var,vbs_it)
   p2<-ncol(X31)
   graphcon2<-outmat[,1:p2]
   
