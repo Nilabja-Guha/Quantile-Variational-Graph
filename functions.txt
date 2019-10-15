@@ -88,7 +88,7 @@ print(bic)
 
 ### We by default use 40 iterations for variational Bayes algorithm, in which the examples converge
 
-### Output:returns the connection probability for each edge i-j, coefficient matrix for selected edge, sign matrix, posterior coefficient matrix
+### Output:returns the connection probability for each edge i-j, coefficient matrix for selected edge, sign matrix, posterior coefficient matrix stacked by column
 
 quantile_network<-function(X3,theta,gridvec,prior_var,vbs_it)
 {
@@ -503,7 +503,7 @@ itN<-vbs_it
 ## Function resval
 
 ## input: data matrix, quantile, coefficient matrix, fitted graph
-##output average residual
+##output average residual under quantile loss
 
 
 
