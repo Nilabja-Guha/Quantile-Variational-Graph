@@ -96,6 +96,7 @@ pr_var<-1
   
 gridvec<-.5
 
+vbs_it<-20
  outmat<-quantile_networkvec_bic(X31,thetavec,gridvec,pr_var,vbs_it)
 
 ################################################################
